@@ -1,6 +1,7 @@
 // Simple CLI interface for showcasing the Enigma header-only library
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <readline/readline.h>
 #include <readline/history.h>
@@ -147,6 +148,83 @@ void execute_info(char **args, size_t n_args) {
   return;
 }
 
+void set_rotor(char **args, size_t n_args) {
+  // set rotor <rotor_name> <position> <ring>
+  if (n_args < 4) {
+    printf("Enigma> set rotor requires at least 4 args: set rotor <rotor_index> <rotor_name> <position> <ring>!\n");
+    return;
+  }
+  
+  char *rotor_index_to_swap = *args++;
+  n_args--;
+  char *rotor_name = *args++;
+  n_args--;
+  char *pos = *args++;
+  n_args--;
+  char *ring = *args++;
+
+  uint8_t rotor_index, rotor_position, rotor_ring;
+  if (strncmp(rotor_index_to_swap, "left", 4) == 0) {
+    rotor_index = 2;
+  } else if (strncmp(rotor_index_to_swap, "middle", 6) == 0) {
+    rotor_index = 1;
+  } else if (strncmp(rotor_index_to_swap, "right", 5) == 0) {
+    rotor_index = 0;
+  } else {
+    printf("Enigma> <rotor_index> must be either: left | middle | right \n");
+    return;
+  }
+
+  // TODO: add more checks here?
+  rotor_position = atoi(pos);
+  rotor_ring = atoi(ring);
+  if ((rotor_position < 0 || rotor_position > 25) && (rotor_ring < 0 || rotor_ring > 25)) {
+    printf("Enigma> rotor position and ring settings must be positive integers between 0 and 25!\n");
+    return;      
+  }
+
+  // DEBUG
+  // printf("rotor_name = %s, len(rotor_name) = %ld, rotor_index = %d, rotor_position = %d, rotor_ring = %d\n",
+  // 	   rotor_name, strlen(rotor_name), rotor_index, rotor_position, rotor_ring);
+
+  destroy_rotor(&ENIGMA->rotors[rotor_index]);
+  init_rotor(&ENIGMA->rotors[rotor_index], rotor_name);
+}
+
+void set_reflector(char **args, size_t n_args) {
+  // set reflector <reflector_name>
+  if (n_args < 1) {
+    printf("Enigma> set reflector requires at least 1 args: set reflector <reflector_name>!\n");
+    return;
+  }
+  char *reflector_name = *args++;
+  destroy_reflector(&ENIGMA->reflector);
+  init_reflector(&ENIGMA->reflector, reflector_name);
+}
+
+void set_plugboard(char **args, size_t n_args) {
+  // set plugboard <k1-v1> <k2-v2> <k3-v3>    
+  if ((n_args < 0) || (n_args > 11)) {
+    printf("Enigma> set reflector requires at least 1 args and no more than 10 args: set reflector <L1-L2> <L3-L4> ...!\n");
+    return;
+  }
+
+  size_t board_size = n_args;
+  uint8_t (*board)[2] = malloc(sizeof(uint8_t) * 2 * n_args);
+  for(size_t i = 0; i < n_args; i++) {
+    char *l1 = strtok(*args++, "-");
+    char *l2 = strtok(NULL, "-");
+
+    uint8_t l1_code = CHAR2CODE(l1[0]);
+    uint8_t l2_code = CHAR2CODE(l2[0]);
+    board[i][0] = l1_code;
+    board[i][1] = l2_code;
+  }
+
+  // Plugboard plugboard = { board, board_size };
+}
+
+
 void execute_set(char **args, size_t n_args) {
   if (n_args < 1) {
     printf("Enigma> set requires at least 1 arg!\n");
@@ -154,35 +232,16 @@ void execute_set(char **args, size_t n_args) {
   }
 
   char *set_type = *args++;
+  n_args--;
   if (strncmp(set_type, "rotor", 5) == 0) {
-    // set rotor <rotor_name> <position> <ring>
-    if (n_args < 5) {
-      printf("Enigma> set rotor requires at least 5 args: set rotor <rotor_index_to_swap> <rotor_name> <position> <ring>!\n");
-      return;
-    }
-    char *rotor_index_to_swap = *args++;
-    char *rotor_name = *args++;
-    char *pos = *args++;
-    char *ring = *args++;
-
-    // TODO finish this
-    
+    set_rotor(args, n_args);
   } else if (strncmp(set_type, "reflector", 9) == 0) {
-    // set reflector <reflector_name>
-    if (n_args < 2) {
-      printf("Enigma> set reflector requires at least 2 args: set reflector <reflector_name>!\n");
-      return;
-    }
-    char *reflector_name = *args++;
-    init_reflector(&ENIGMA->reflector, reflector_name);
+    set_reflector(args, n_args);
   } else if (strncmp(set_type, "plugboard", 9) == 0) {
-    // set plugboard <k1-v1> <k2-v2> <k3-v3>    
-    if ((n_args < 2) || (n_args > 11)) {
-      printf("Enigma> set reflector requires at least 2 args and no more than 11 args: set reflector <k1-v1> <k2-v2> ...!\n");
-      return;
-    }
-
-    // TODO finish this
+    set_plugboard(args, n_args);
+  } else {
+    printf("Enigma> set accepts only the following args: rotor | reflector | plugboard\n");
+    return;    
   }
 }
 
@@ -226,13 +285,12 @@ int main(void) {
   // default enigma
   ENIGMA = init_enigma((const char *[]){"II", "I", "III"},  // rotors
 		       "A",                                 // reflector
-		       (Plugboard) {                        // plugboard
-			 (uint8_t [][2]){
-			   {'A' - 'A', 'M' - 'A'}, {'F' - 'A', 'I' - 'A'},
-			   {'N' - 'A', 'V' - 'A'}, {'P' - 'A', 'S' - 'A'},
-			   {'T' - 'A', 'U' - 'A'}, {'W' - 'A', 'Z' - 'A'},			   
-			 },
-			 6}
+		       (uint8_t [][2]){
+			 {'A' - 'A', 'M' - 'A'}, {'F' - 'A', 'I' - 'A'},
+			 {'N' - 'A', 'V' - 'A'}, {'P' - 'A', 'S' - 'A'},
+			 {'T' - 'A', 'U' - 'A'}, {'W' - 'A', 'Z' - 'A'},			   
+		       },
+		       6
 		       );
   
   // REPL
