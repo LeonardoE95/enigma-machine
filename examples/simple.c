@@ -7,30 +7,35 @@
 // --------------------------------------------------------------
 
 int main() {
-  // TODO: fix this with new way to init enigma
-  // const char *rotors[3] = { "III", "II", "I" };
-  // Enigma *enigma_1 = init_enigma(rotors, "B", (Plugboard) {NULL, 0});
-  // Enigma *enigma_2 = init_enigma(rotors, "B", (Plugboard) {NULL, 0});
+  Enigma *e = init_enigma((const char *[]){"II", "I", "III"},   // rotors_names
+			  (const uint8_t [ROTORS_N]) {0, 0, 0}, // rotor_positions
+			  (const uint8_t [ROTORS_N]) {0, 0, 0}, // rotor_ring_settings			
+			  "A",                                  // reflector
+			  (uint8_t [][2]){                      // plugboard switches
+			    {'A' - 'A', 'M' - 'A'}, {'F' - 'A', 'I' - 'A'},
+			    {'N' - 'A', 'V' - 'A'}, {'P' - 'A', 'S' - 'A'},
+			    {'T' - 'A', 'U' - 'A'}, {'W' - 'A', 'Z' - 'A'},			   
+			  },
+			  6                                      // plugboard size
+			  );
 
-  // // ------------------
+  // ------------------
 
-  // char *str = "HELLOWORLDMYNAMEISASODJASPODASOPDKOAPSDOPASDOPKFOPKSDOPGKFDSPOGKDFPOGKDPOFGKPDOF";
-  // size_t length = strlen(str);
+  char *str = "HELLO";
+  size_t length = strlen(str);
   
-  // char *plaintext = malloc(length * sizeof(char));
-  // char *ciphertext = malloc(length * sizeof(char));
-  // strncpy(plaintext, str, length); 
-  // strncpy(ciphertext, plaintext, length);
+  char *plaintext = malloc(length * sizeof(char));
+  char *ciphertext = malloc(length * sizeof(char));
+  strncpy(plaintext, str, length); 
+  strncpy(ciphertext, plaintext, length);
 
-  // enigma_encrypt(enigma_1, (uint8_t*)plaintext, length, (uint8_t*)ciphertext);
-  // enigma_decrypt(enigma_2, (uint8_t*)ciphertext, length, (uint8_t*)plaintext);
+  enigma_encrypt(e, plaintext, length, ciphertext);
 
-  // // ------------------  
+  // ------------------  
 
-  // free(plaintext);  
-  // free(ciphertext);
-  // destroy_enigma(enigma_1);
-  // destroy_enigma(enigma_2);
+  free(plaintext);  
+  free(ciphertext);
+  destroy_enigma(e);
     
   return 0;
 }

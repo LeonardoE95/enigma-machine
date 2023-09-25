@@ -188,7 +188,7 @@ void set_rotor(char **args, size_t n_args) {
   // 	   rotor_name, strlen(rotor_name), rotor_index, rotor_position, rotor_ring);
 
   destroy_rotor(&ENIGMA->rotors[rotor_index]);
-  init_rotor(&ENIGMA->rotors[rotor_index], rotor_name);
+  init_rotor(&ENIGMA->rotors[rotor_index], rotor_name, rotor_position, rotor_ring);
 }
 
 void set_reflector(char **args, size_t n_args) {
@@ -198,8 +198,8 @@ void set_reflector(char **args, size_t n_args) {
     return;
   }
   char *reflector_name = *args++;
-  destroy_reflector(&ENIGMA->reflector);
-  init_reflector(&ENIGMA->reflector, reflector_name);
+  destroy_reflector(ENIGMA);
+  init_reflector(ENIGMA, reflector_name);
 }
 
 void set_plugboard(char **args, size_t n_args) {
@@ -210,7 +210,7 @@ void set_plugboard(char **args, size_t n_args) {
   }
 
   size_t board_size = n_args;
-  uint8_t (*board)[2] = malloc(sizeof(uint8_t) * 2 * n_args);
+  uint8_t board[board_size][2];
   for(size_t i = 0; i < n_args; i++) {
     char *l1 = strtok(*args++, "-");
     char *l2 = strtok(NULL, "-");
@@ -221,7 +221,8 @@ void set_plugboard(char **args, size_t n_args) {
     board[i][1] = l2_code;
   }
 
-  // Plugboard plugboard = { board, board_size };
+  destroy_plugboard(ENIGMA);
+  init_plugboard(ENIGMA, board, board_size);
 }
 
 
@@ -257,7 +258,7 @@ void execute_encrypt(char **args, size_t n_args) {
   strncpy(ciphertext, plaintext, length);
   ciphertext[length] = '\0';
   
-  enigma_encrypt(ENIGMA, (uint8_t*)plaintext, length, (uint8_t*)ciphertext);
+  enigma_encrypt(ENIGMA, plaintext, length, ciphertext);
   printf("%s\n", ciphertext);
   free(ciphertext);
 }
@@ -274,7 +275,7 @@ void execute_decrypt(char **args, size_t n_args) {
   strncpy(plaintext, ciphertext, length);
   plaintext[length] = '\0';
   
-  enigma_decrypt(ENIGMA, (uint8_t*)ciphertext, length, (uint8_t*)plaintext);
+  enigma_decrypt(ENIGMA, ciphertext, length, plaintext);
   printf("%s\n", plaintext);
   free(plaintext);  
 }
@@ -283,14 +284,16 @@ void execute_decrypt(char **args, size_t n_args) {
 
 int main(void) {
   // default enigma
-  ENIGMA = init_enigma((const char *[]){"II", "I", "III"},  // rotors
-		       "A",                                 // reflector
-		       (uint8_t [][2]){
+  ENIGMA = init_enigma((const char *[]){"II", "I", "III"},   // rotors_names
+		       (const uint8_t [ROTORS_N]) {0, 0, 0}, // rotor_positions
+		       (const uint8_t [ROTORS_N]) {0, 0, 0}, // rotor_ring_settings			
+		       "A",                                  // reflector
+		       (uint8_t [][2]){                      // plugboard switches
 			 {'A' - 'A', 'M' - 'A'}, {'F' - 'A', 'I' - 'A'},
 			 {'N' - 'A', 'V' - 'A'}, {'P' - 'A', 'S' - 'A'},
 			 {'T' - 'A', 'U' - 'A'}, {'W' - 'A', 'Z' - 'A'},			   
 		       },
-		       6
+		       6                                      // plugboard size
 		       );
   
   // REPL
@@ -318,6 +321,8 @@ int main(void) {
     // usual?
     free(buff);
   }
+
+  destroy_enigma(ENIGMA);
   
   return 0;
 }
