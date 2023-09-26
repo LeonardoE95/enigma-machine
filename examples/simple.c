@@ -23,12 +23,10 @@ int main() {
 
   char *str = "HELLO";
   size_t length = strlen(str);
-  
   char *plaintext = malloc(length * sizeof(char));
   char *ciphertext = malloc(length * sizeof(char));
   strncpy(plaintext, str, length); 
   strncpy(ciphertext, plaintext, length);
-
   enigma_encrypt(e, plaintext, length, ciphertext);
 
   // ------------------  
