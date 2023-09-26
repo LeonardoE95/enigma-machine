@@ -89,7 +89,7 @@ First you istantiate an enigma machine with a call to `init_enigma`
 			  (uint8_t [][2]){                      // plugboard switches
 			    {'A' - 'A', 'M' - 'A'}, {'F' - 'A', 'I' - 'A'},
 			    {'N' - 'A', 'V' - 'A'}, {'P' - 'A', 'S' - 'A'},
-			    {'T' - 'A', 'U' - 'A'}, {'W' - 'A', 'Z' - 'A'},			   
+			    {'T' - 'A', 'U' - 'A'}, {'W' - 'A', 'Z' - 'A'},
 			  },
 			  6                                      // plugboard size
 			  );
