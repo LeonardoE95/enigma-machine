@@ -35,10 +35,10 @@ Some examples are shown below
 ```
 Enigma> info
 Enigma> Current configuration...
-        Rotors (from left to right): II, I, III
+        Rotors (from left to right): M3-II, M3-I, M3-III
                Position: 0, 0, 0
                    Ring: 0, 0, 0
-        Reflector: A
+        Reflector: M3-B
         Plugboard: 6 plugs
                    (A, M)
                    (F, I)
@@ -46,28 +46,27 @@ Enigma> Current configuration...
                    (P, S)
                    (T, U)
                    (W, Z)
-```
-
-```
 Enigma> encrypt HELLO
-OUMNW
+MIJEN
 ```
 
 ```
-Enigma> set rotor right III 1 2
+Enigma> set reflector M3-B
+Enigma> set rotor left M3-I 1 2
+Enigma> set rotor middle M3-II 3 4
+Enigma> set rotor right M3-III 5 6
+Enigma> set plugboard B-Q C-R
 Enigma> info
 Enigma> Current configuration...
-        Rotors (from left to right): II, I, III
-               Position: 0, 0, 1
-                   Ring: 0, 0, 2
-        Reflector: A
-        Plugboard: 6 plugs
-                   (A, M)
-                   (F, I)
-                   (N, V)
-                   (P, S)
-                   (T, U)
-                   (W, Z)
+        Rotors (from left to right): M3-I, M3-II, M3-III
+               Position: 1, 3, 5
+                   Ring: 2, 4, 6
+        Reflector: M3-B
+        Plugboard: 2 plugs
+                   (B, Q)
+                   (C, R)
+Enigma> encrypt DSFSDFSDF
+SCLMEEYMV
 ```
 
 ## Library Usage
@@ -82,14 +81,14 @@ To actually use the library in your own C sources, download the `enigma.h` file 
 First you istantiate an enigma machine with a call to `init_enigma`
 
 ```c
-  Enigma *e = init_enigma((const char *[]){"II", "I", "III"},   // rotors_names
+  Enigma *e = init_enigma((const char *[]){"M3-II", "M3-I", "M3-III"},   // rotors_names
 			  (const uint8_t [ROTORS_N]) {0, 0, 0}, // rotor_positions
 			  (const uint8_t [ROTORS_N]) {0, 0, 0}, // rotor_ring_settings			
-			  "A",                                  // reflector
+			  "M3-B",                                  // reflector
 			  (uint8_t [][2]){                      // plugboard switches
-			    {'A' - 'A', 'M' - 'A'}, {'F' - 'A', 'I' - 'A'},
-			    {'N' - 'A', 'V' - 'A'}, {'P' - 'A', 'S' - 'A'},
-			    {'T' - 'A', 'U' - 'A'}, {'W' - 'A', 'Z' - 'A'},
+			    {'A', 'M'}, {'F', 'I'},
+			    {'N', 'V'}, {'P', 'S'},
+			    {'T', 'U'}, {'W', 'Z'},
 			  },
 			  6                                      // plugboard size
 			  );
