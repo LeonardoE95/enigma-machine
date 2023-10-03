@@ -25,7 +25,7 @@ typedef enum {
 
 typedef struct {
   CommandType type;
-  char **args;
+  char *args[MAX_ARGS];
   size_t n_args;
 } Command;
 
@@ -47,12 +47,12 @@ Enigma *ENIGMA;
 // DOES MATTER. There is a matching 1-to-1 between the CommandType
 // enum and the index of these function.
 void (*CLI_ACTION_TABLE[]) (char **args, size_t n_args) = {
-  execute_quit,
-  execute_help,  
-  execute_info,
-  execute_set,
-  execute_encrypt,
-  execute_decrypt,
+  [C_QUIT] = execute_quit,
+  [C_HELP] = execute_help,
+  [C_INFO] = execute_info,
+  [C_SET] = execute_set,
+  [C_ENCRYPT] = execute_encrypt,
+  [C_DECRYPT] = execute_decrypt,
 };
 
 // ----------------------------------------
@@ -64,11 +64,11 @@ CommandType string2command_type(const char *cmd) {
     return C_QUIT;
   } else if (strncmp(cmd, "info", 4) == 0) {
     return C_INFO;
-  } else if (strncmp(cmd, "set", 4) == 0) {
+  } else if (strncmp(cmd, "set", 3) == 0) {
     return C_SET;
-  } else if (strncmp(cmd, "encrypt", 4) == 0) {
+  } else if (strncmp(cmd, "encrypt", 7) == 0) {
     return C_ENCRYPT;
-  } else if (strncmp(cmd, "decrypt", 4) == 0) {
+  } else if (strncmp(cmd, "decrypt", 7) == 0) {
     return C_DECRYPT;
   } else {
     return C_UNKNOWN;
@@ -80,12 +80,11 @@ Command parse_args(char *buff) {
   
   char *cmd_str = strtok(buff, " ");
   c.type = string2command_type(cmd_str);
-
-  c.args = malloc(sizeof(char*) * MAX_ARGS);
+  
   size_t i = 0;
   do {
     c.args[i++] = strtok(NULL, " ");
-  } while (c.args[i-1] != NULL);
+  } while ((c.args[i-1] != NULL) && (i < MAX_ARGS));
   c.n_args = i - 1;
   
   return c;
@@ -162,6 +161,7 @@ void set_rotor(char **args, size_t n_args) {
   char *pos = *args++;
   n_args--;
   char *ring = *args++;
+  n_args--;
 
   uint8_t rotor_index, rotor_position, rotor_ring;
   if (strncmp(rotor_index_to_swap, "left", 4) == 0) {
@@ -178,6 +178,7 @@ void set_rotor(char **args, size_t n_args) {
   // TODO: add more checks here?
   rotor_position = atoi(pos);
   rotor_ring = atoi(ring);
+  
   if ((rotor_position < 0 || rotor_position > 25) && (rotor_ring < 0 || rotor_ring > 25)) {
     printf("Enigma> rotor position and ring settings must be positive integers between 0 and 25!\n");
     return;      
@@ -197,7 +198,10 @@ void set_reflector(char **args, size_t n_args) {
     printf("Enigma> set reflector requires at least 1 args: set reflector <reflector_name>!\n");
     return;
   }
+  
   char *reflector_name = *args++;
+  n_args--;
+  
   destroy_reflector(ENIGMA);
   init_reflector(ENIGMA, reflector_name);
 }
@@ -214,11 +218,8 @@ void set_plugboard(char **args, size_t n_args) {
   for(size_t i = 0; i < n_args; i++) {
     char *l1 = strtok(*args++, "-");
     char *l2 = strtok(NULL, "-");
-
-    uint8_t l1_code = CHAR2CODE(l1[0]);
-    uint8_t l2_code = CHAR2CODE(l2[0]);
-    board[i][0] = l1_code;
-    board[i][1] = l2_code;
+    board[i][0] = l1[0];
+    board[i][1] = l2[0];
   }
 
   destroy_plugboard(ENIGMA);
@@ -234,6 +235,7 @@ void execute_set(char **args, size_t n_args) {
 
   char *set_type = *args++;
   n_args--;
+  
   if (strncmp(set_type, "rotor", 5) == 0) {
     set_rotor(args, n_args);
   } else if (strncmp(set_type, "reflector", 9) == 0) {
@@ -251,12 +253,11 @@ void execute_encrypt(char **args, size_t n_args) {
     printf("Enigma> encrypt requires only 1 arg, the plaintext to encrypt!\n");
     return;
   }
-  
-  char *plaintext = args[0];
+
+  char *plaintext = *args++;
+  n_args--;
   size_t length = strlen(plaintext);
-  char *ciphertext = malloc((length+1) * sizeof(char));
-  strncpy(ciphertext, plaintext, length);
-  ciphertext[length] = '\0';
+  char *ciphertext = copy_str(plaintext, length);
   
   enigma_encrypt(ENIGMA, plaintext, length, ciphertext);
   printf("%s\n", ciphertext);
@@ -269,11 +270,10 @@ void execute_decrypt(char **args, size_t n_args) {
     return;
   }
   
-  char *ciphertext = args[0];
+  char *ciphertext = *args++;
+  n_args--;
   size_t length = strlen(ciphertext);
-  char *plaintext = malloc((length+1) * sizeof(char));
-  strncpy(plaintext, ciphertext, length);
-  plaintext[length] = '\0';
+  char *plaintext = copy_str(ciphertext, length);
   
   enigma_decrypt(ENIGMA, ciphertext, length, plaintext);
   printf("%s\n", plaintext);
@@ -284,14 +284,14 @@ void execute_decrypt(char **args, size_t n_args) {
 
 int main(void) {
   // default enigma
-  ENIGMA = init_enigma((const char *[]){"II", "I", "III"},   // rotors_names
+  ENIGMA = init_enigma((const char *[]){"M3-II", "M3-I", "M3-III"},   // rotors_names
 		       (const uint8_t [ROTORS_N]) {0, 0, 0}, // rotor_positions
 		       (const uint8_t [ROTORS_N]) {0, 0, 0}, // rotor_ring_settings			
-		       "A",                                  // reflector
+		       "M3-B",                                  // reflector
 		       (uint8_t [][2]){                      // plugboard switches
-			 {'A' - 'A', 'M' - 'A'}, {'F' - 'A', 'I' - 'A'},
-			 {'N' - 'A', 'V' - 'A'}, {'P' - 'A', 'S' - 'A'},
-			 {'T' - 'A', 'U' - 'A'}, {'W' - 'A', 'Z' - 'A'},			   
+			 {'A', 'M'}, {'F', 'I'},
+			 {'N', 'V'}, {'P', 'S'},
+			 {'T', 'U'}, {'W', 'Z'},			   
 		       },
 		       6                                      // plugboard size
 		       );
@@ -304,7 +304,6 @@ int main(void) {
 
     if (buff == NULL) {
       printf("Enigma> Terminating process...\n");
-      free(buff);
       exit(0);
     }
 
@@ -315,7 +314,7 @@ int main(void) {
       execute_cmd(cmd);
     }
 
-    // NOTE: Is it okay if in parse_args() we call the funciton
+    // NOTE: Is it okay if in parse_args() we call the function
     // strtok() on the buffer allocated by readline() or will this
     // cause problems with memory management? can we just free it as
     // usual?

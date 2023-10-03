@@ -36,6 +36,12 @@ typedef struct {
 } Rotor;
 
 typedef struct {
+  char *name;
+  char *wiring;
+  uint8_t notch;
+} RotorModel;
+
+typedef struct {
   uint8_t board[PLUGBOARD_SIZE][2];
   size_t board_size;
 } Plugboard;
@@ -44,6 +50,11 @@ typedef struct {
   Wiring wiring;
   char *name;
 } Reflector;
+
+typedef struct {
+  char *name;
+  char *wiring;
+} ReflectorModel;
 
 // To properly configure an Enigma machine you need four different settings:
 //
@@ -70,6 +81,7 @@ Enigma *init_enigma(const char *rotor_names[ROTORS_N], const uint8_t rotor_posit
 
 void init_wiring(Wiring wiring, const char *alphabet, size_t alphabet_len);
 void reverse_wiring(Wiring new_wiring, Wiring old_wiring, size_t wiring_len);
+char *copy_str(const char *src, const size_t length);
 
 void init_rotor(Rotor *r, const char *rotor_name, const uint8_t position, const uint8_t ring_settings);
 void init_rotors(Enigma *e, const char *rotor_names[ROTORS_N], const uint8_t rotor_positions[ROTORS_N], const uint8_t rotor_ring_settings[ROTORS_N]);
@@ -93,9 +105,28 @@ void enigma_decrypt(Enigma *e, const char *ciphertext, size_t ciphertext_len, ch
 // --------------------------------------------------------------
 // ENIGMA MODELS
 
+RotorModel KNOWN_ROTORS[] = {
+  {"M3-I", "EKMFLGDQVZNTOWYHXUSPAIBRCJ", CHAR2CODE('Q')},
+  {"M3-II", "AJDKSIRUXBLHWTMCQGZNPYFVOE", CHAR2CODE('E')},
+  {"M3-III", "BDFHJLCPRTXVZNYEIWGAKMUSQO", CHAR2CODE('V')},
+  {"M3-IV", "ESOVPZJAYQUIRHXLNFTGKDCMWB", CHAR2CODE('J')},
+  {"M3-V", "VZBRGITYUPSDNHLXAWMJQOFECK", CHAR2CODE('Z')},
+  {NULL, NULL, 0},
+};
+
+ReflectorModel KNOWN_REFLECTORS[] = {
+  {"M3-A", "EJMZALYXVBWFCRQUONTSPIKHGD"},
+  {"M3-B", "YRUHQSLDPXNGOKMIEBFZCWVJAT"},
+  {"M3-C", "FVPJIAOYEDRZXWGCTKUQSBNMHL"},
+  {NULL, NULL}
+};
+
+// --------------------------------------------------------------
+// INITIALIZATION LOGIC
+
 void init_wiring(Wiring wiring, const char *alphabet, size_t alphabet_len) {
   for (size_t i = 0; i < alphabet_len; i++) {
-    wiring[i] = (uint8_t) (alphabet[i] - 'A');
+    wiring[i] = CHAR2CODE(alphabet[i]);
   }
 }
 
@@ -105,48 +136,47 @@ void init_wiring(Wiring wiring, const char *alphabet, size_t alphabet_len) {
 // 
 void reverse_wiring(Wiring new_wiring, Wiring old_wiring, size_t wiring_len) {
   for(size_t i = 0; i < wiring_len; i++) {
-    new_wiring[old_wiring[i]] = (uint8_t)i;    
+    new_wiring[old_wiring[i]] = (uint8_t)i;
   }  
+}
+
+char *copy_str(const char *src, const size_t length) {
+  char *dst = malloc(sizeof(char) * (length+1));
+  strncpy(dst, src, length);
+  dst[length] = '\0';
+  return dst;
 }
 
 // https://www.cryptomuseum.com/crypto/enigma/wiring.htm
 void init_rotor(Rotor *r, const char *rotor_name, const uint8_t position, const uint8_t ring) {
   size_t rotor_len;
-  if (strcmp(rotor_name, "I") == 0 ) {
-    r->notch = (uint8_t) 'Q' - 'A';
-    rotor_len = 1;
-    init_wiring(r->forward_wiring, "EKMFLGDQVZNTOWYHXUSPAIBRCJ", ALPHABET_SIZE);
-  } else if (strcmp(rotor_name, "II") == 0 ) {
-    r->notch = (uint8_t) 'E' - 'A';
-    rotor_len = 2;
-    init_wiring(r->forward_wiring, "AJDKSIRUXBLHWTMCQGZNPYFVOE", ALPHABET_SIZE);
-  } else if (strcmp(rotor_name, "III") == 0 ) {
-    r->notch = (uint8_t) 'V' - 'A';
-    rotor_len = 3;
-    init_wiring(r->forward_wiring, "BDFHJLCPRTXVZNYEIWGAKMUSQO", ALPHABET_SIZE);
-  } else if (strcmp(rotor_name, "IV") == 0 ) {
-    r->notch = (uint8_t) 'J' - 'A';
-    rotor_len = 2;
-    init_wiring(r->forward_wiring, "ESOVPZJAYQUIRHXLNFTGKDCMWB", ALPHABET_SIZE);        
-  } else if (strcmp(rotor_name, "V") == 0 ) {
-    r->notch = (uint8_t) 'Z' - 'A';
-    rotor_len = 1;
-    init_wiring(r->forward_wiring, "VZBRGITYUPSDNHLXAWMJQOFECK", ALPHABET_SIZE);        
-  } else {
+  uint8_t found = 0;
+  
+  for(size_t i = 0; KNOWN_ROTORS[i].name != NULL; i++) {
+    if (strcmp(KNOWN_ROTORS[i].name, rotor_name) == 0) {
+      found = 1;
+      
+      char *wiring = KNOWN_ROTORS[i].wiring;
+      char *name = KNOWN_ROTORS[i].name;
+      uint8_t notch = KNOWN_ROTORS[i].notch;
+
+      init_wiring(r->forward_wiring, wiring, ALPHABET_SIZE);
+      reverse_wiring(r->backward_wiring, r->forward_wiring, ALPHABET_SIZE);
+
+      r->notch = notch;      
+      r->position = position;
+      r->ring = ring;
+
+      rotor_len = strlen(name);      
+      r->name = copy_str(rotor_name, rotor_len);      
+      
+      break;
+    }
+  }
+
+  if (!found) {
     assert(0 && "init_rotor(): unsupported rotor\n");
   }
-  
-  r->position = position;
-  r->ring = ring;
-  reverse_wiring(r->backward_wiring, r->forward_wiring, ALPHABET_SIZE);
-  r->name = malloc(sizeof(char) * (rotor_len+1));
-  strncpy(r->name, rotor_name, rotor_len);
-  r->name[rotor_len] = '\0';
-}
-
-void destroy_rotor(Rotor *r) {
-  if(r->name)
-    free(r->name);
 }
 
 void init_rotors(Enigma *e, const char *rotor_names[ROTORS_N], const uint8_t rotor_positions[ROTORS_N], const uint8_t rotor_ring_settings[ROTORS_N]) {
@@ -159,49 +189,35 @@ void init_rotors(Enigma *e, const char *rotor_names[ROTORS_N], const uint8_t rot
   }
 }
 
-void destroy_rotors(Rotor *rotors) {
-  for (size_t i = 0; i < ROTORS_N; i++) {
-    destroy_rotor(&rotors[i]);
-  }
-}
-
 void init_reflector(Enigma *e, const char *reflector_name) {
   size_t ref_len;
-  if (strcmp(reflector_name, "A") == 0 ) {
-    ref_len = 1;
-    init_wiring(e->reflector.wiring, "EJMZALYXVBWFCRQUONTSPIKHGD", ALPHABET_SIZE);
-  } else if (strcmp(reflector_name, "B") == 0 ) {
-    ref_len = 1;
-    init_wiring(e->reflector.wiring, "YRUHQSLDPXNGOKMIEBFZCWVJAT", ALPHABET_SIZE);
-  } else if (strcmp(reflector_name, "C") == 0 ) {
-    ref_len = 1;
-    init_wiring(e->reflector.wiring, "FVPJIAOYEDRZXWGCTKUQSBNMHL", ALPHABET_SIZE);
-  } else {
-    assert(0 && "init_reflector(): unsupported reflector\n");
+  uint8_t found = 0;
+
+  for (size_t i = 0; KNOWN_REFLECTORS[i].name != NULL; i++) {
+    if (strcmp(KNOWN_REFLECTORS[i].name, reflector_name) == 0) {
+      found = 1;
+
+      char *name = KNOWN_REFLECTORS[i].name;
+      char *wiring = KNOWN_REFLECTORS[i].wiring;
+
+      init_wiring(e->reflector.wiring, wiring, ALPHABET_SIZE);
+
+      ref_len = strlen(name);
+      e->reflector.name = copy_str(reflector_name, ref_len);
+    }
   }
 
-  e->reflector.name = malloc(sizeof(char) * (ref_len+1));
-  strncpy(e->reflector.name, reflector_name, ref_len);
-  e->reflector.name[ref_len] = '\0';
-}
-
-void destroy_reflector(Enigma *e) {
-  if(e->reflector.name)
-    free(e->reflector.name);
+  if (!found) {
+    assert(0 && "init_reflector(): unsupported reflector\n");
+  }  
+  
 }
 
 void init_plugboard(Enigma *e, uint8_t(*board)[2], size_t plugboard_size) {
   e->plugboard.board_size = plugboard_size;
   for(size_t i = 0; i < plugboard_size; i++) {
-    e->plugboard.board[i][0] = board[i][0];
-    e->plugboard.board[i][1] = board[i][1];    
-  }
-}
-
-void destroy_plugboard(Enigma *e) {
-  for(size_t i = 0; i < e->plugboard.board_size; i++) {
-    e->plugboard.board[i][0] = 255;
-    e->plugboard.board[i][1] = 255;
+    e->plugboard.board[i][0] = CHAR2CODE(board[i][0]);
+    e->plugboard.board[i][1] = CHAR2CODE(board[i][1]);
   }
 }
 
@@ -221,6 +237,33 @@ Enigma *init_enigma(const char *rotor_names[ROTORS_N], const uint8_t rotor_posit
   init_plugboard(e, plugboard, plugboard_size);
   
   return e;
+}
+
+// --------------------------------------------------------------
+// DESTRUCTION LOGIC
+
+void destroy_rotor(Rotor *r) {
+  if(r->name)
+    free(r->name);
+}
+
+void destroy_rotors(Rotor *rotors) {
+  for (size_t i = 0; i < ROTORS_N; i++) {
+    destroy_rotor(&rotors[i]);
+  }
+}
+
+void destroy_plugboard(Enigma *e) {
+  for(size_t i = 0; i < e->plugboard.board_size; i++) {
+    e->plugboard.board[i][0] = 255;
+    e->plugboard.board[i][1] = 255;
+  }
+  e->plugboard.board_size = 0;
+}
+
+void destroy_reflector(Enigma *e) {
+  if(e->reflector.name)
+    free(e->reflector.name);
 }
 
 void destroy_enigma(Enigma *e) {

@@ -1,9 +1,9 @@
 #!/usr/bin/env sh
 
-CMD="set reflector B\n"
-CMD+="set rotor left I 0 0\n"
-CMD+="set rotor middle II 0 0\n"
-CMD+="set rotor right III 0 0\n"
+CMD="set reflector M3-B\n"
+CMD+="set rotor left M3-I 0 0\n"
+CMD+="set rotor middle M3-II 0 0\n"
+CMD+="set rotor right M3-III 0 0\n"
 CMD+="set plugboard B-Q C-R\n"
 CMD+="info\n"
 CMD+="encrypt DSFSDFSDF\n"

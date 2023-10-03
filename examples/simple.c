@@ -7,14 +7,14 @@
 // --------------------------------------------------------------
 
 int main() {
-  Enigma *e = init_enigma((const char *[]){"II", "I", "III"},   // rotors_names
+  Enigma *e = init_enigma((const char *[]){"M3-II", "M3-I", "M3-III"},   // rotors_names
 			  (const uint8_t [ROTORS_N]) {0, 0, 0}, // rotor_positions
 			  (const uint8_t [ROTORS_N]) {0, 0, 0}, // rotor_ring_settings			
-			  "A",                                  // reflector
+			  "M3-B",                                  // reflector
 			  (uint8_t [][2]){                      // plugboard switches
-			    {'A' - 'A', 'M' - 'A'}, {'F' - 'A', 'I' - 'A'},
-			    {'N' - 'A', 'V' - 'A'}, {'P' - 'A', 'S' - 'A'},
-			    {'T' - 'A', 'U' - 'A'}, {'W' - 'A', 'Z' - 'A'},			   
+			    {'A', 'M'}, {'F', 'I'},
+			    {'N', 'V'}, {'P', 'S'},
+			    {'T', 'U'}, {'W', 'Z'},
 			  },
 			  6                                      // plugboard size
 			  );
