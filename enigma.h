@@ -301,6 +301,7 @@ void move_rotors(Enigma *e) {
   // first rotation.
   //
   //  https://www.youtube.com/watch?v=5StZlF-clPc
+  //  https://www.youtube.com/watch?v=hcVhQeZ5gI4
   // 
   if (e->rotors[1].position == e->rotors[1].notch) {
     e->rotors[2].position = (e->rotors[2].position + 1) % ALPHABET_SIZE;
