@@ -278,7 +278,7 @@ void destroy_enigma(Enigma *e) {
 // CORE LOGIC
 
 uint8_t apply_rotor(Rotor *r, uint8_t char_code, RotorOrder order) {
-  char_code = (char_code - r->ring + r->position + 26) % ALPHABET_SIZE;
+  char_code = (char_code - r->ring + r->position + ALPHABET_SIZE) % ALPHABET_SIZE;
   if (order == RO_FORWARD)  {
     char_code = r->forward_wiring[char_code];
   } else if (order == RO_BACKWARD) {
@@ -286,7 +286,7 @@ uint8_t apply_rotor(Rotor *r, uint8_t char_code, RotorOrder order) {
   } else {
     assert(0 && "Unreachable");
   }
-  char_code = (char_code + r->ring - r->position + 26) % ALPHABET_SIZE;
+  char_code = (char_code + r->ring - r->position + ALPHABET_SIZE) % ALPHABET_SIZE;
 
   return char_code;  
 }
