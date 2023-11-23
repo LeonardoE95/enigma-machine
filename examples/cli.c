@@ -188,7 +188,6 @@ void set_rotor(char **args, size_t n_args) {
   // printf("rotor_name = %s, len(rotor_name) = %ld, rotor_index = %d, rotor_position = %d, rotor_ring = %d\n",
   // 	   rotor_name, strlen(rotor_name), rotor_index, rotor_position, rotor_ring);
 
-  destroy_rotor(&ENIGMA->rotors[rotor_index]);
   init_rotor(&ENIGMA->rotors[rotor_index], rotor_name, rotor_position, rotor_ring);
 }
 
@@ -202,7 +201,6 @@ void set_reflector(char **args, size_t n_args) {
   char *reflector_name = *args++;
   n_args--;
   
-  destroy_reflector(ENIGMA);
   init_reflector(ENIGMA, reflector_name);
 }
 
@@ -222,7 +220,7 @@ void set_plugboard(char **args, size_t n_args) {
     board[i][1] = l2[0];
   }
 
-  destroy_plugboard(ENIGMA);
+  reset_plugboard(ENIGMA);
   init_plugboard(ENIGMA, board, board_size);
 }
 
@@ -256,12 +254,13 @@ void execute_encrypt(char **args, size_t n_args) {
 
   char *plaintext = *args++;
   n_args--;
-  size_t length = strlen(plaintext);
-  char *ciphertext = copy_str(plaintext, length);
+  size_t plaintext_length = strlen(plaintext);
   
-  enigma_encrypt(ENIGMA, plaintext, length, ciphertext);
+  char ciphertext[plaintext_length];
+  memcpy(ciphertext, plaintext, plaintext_length + 1);
+  
+  enigma_encrypt(ENIGMA, plaintext, plaintext_length, ciphertext);
   printf("%s\n", ciphertext);
-  free(ciphertext);
 }
 
 void execute_decrypt(char **args, size_t n_args) {
@@ -272,12 +271,13 @@ void execute_decrypt(char **args, size_t n_args) {
   
   char *ciphertext = *args++;
   n_args--;
-  size_t length = strlen(ciphertext);
-  char *plaintext = copy_str(ciphertext, length);
-  
-  enigma_decrypt(ENIGMA, ciphertext, length, plaintext);
+  size_t ciphertext_length = strlen(ciphertext);
+
+  char plaintext[ciphertext_length];
+  memcpy(plaintext, ciphertext, ciphertext_length + 1);  
+
+  enigma_decrypt(ENIGMA, ciphertext, ciphertext_length, plaintext);
   printf("%s\n", plaintext);
-  free(plaintext);  
 }
 
 // ----------------------------------------

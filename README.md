@@ -2,6 +2,10 @@
 
 Implementation of Enigma machine used by German troops to encrypt communications during WWII. The machine is implemented using the C programming language as a header-only library. 
 
+**NOTE**: The current implementation is able to work only with capital
+letters taken from the english alphabet. That is, we work with the
+alphabet `ABCDEFGHIJKLMNOPQRSTUVWXYZ`.
+
 ## Quick Start
 
 To use the machine compile the examples and in particular the `examples/cli.c` file
@@ -81,17 +85,22 @@ To actually use the library in your own C sources, download the `enigma.h` file 
 First you istantiate an enigma machine with a call to `init_enigma`
 
 ```c
-  Enigma *e = init_enigma((const char *[]){"M3-II", "M3-I", "M3-III"},   // rotors_names
-			  (const uint8_t [ROTORS_N]) {0, 0, 0}, // rotor_positions
-			  (const uint8_t [ROTORS_N]) {0, 0, 0}, // rotor_ring_settings			
-			  "M3-B",                                  // reflector
-			  (uint8_t [][2]){                      // plugboard switches
-			    {'A', 'M'}, {'F', 'I'},
-			    {'N', 'V'}, {'P', 'S'},
-			    {'T', 'U'}, {'W', 'Z'},
-			  },
-			  6                                      // plugboard size
-			  );
+Enigma *e = init_enigma (
+			 // rotors model
+			 (const char *[]){"M3-II", "M3-I", "M3-III"},
+			 // rotor_positions
+			 (const uint8_t [ROTORS_N]) {0, 0, 0},
+			 // rotor_ring_settings
+			 (const uint8_t [ROTORS_N]) {0, 0, 0},
+			 // reflector model
+			 "M3-B",
+			 // plugboard switches
+			 (uint8_t [][2]){
+			   {'A', 'M'}, {'F', 'I'}, {'N', 'V'},
+			   {'P', 'S'}, {'T', 'U'}, {'W', 'Z'}},
+			 // plugboard size
+			 6 
+			 );
 ```
 And then you can encrypt/decrypt your text. 
 
@@ -105,23 +114,18 @@ Notice that before using the machine you have to take care of allocating the mem
 ```c
 char *str = "HELLO";
 size_t length = strlen(str);
-char *plaintext = malloc(length * sizeof(char));
-char *ciphertext = malloc(length * sizeof(char));
-strncpy(plaintext, str, length); 
-strncpy(ciphertext, plaintext, length);
+
+char plaintext[length];
+char ciphertext[length];
+  
+memcpy(plaintext, str, length + 1);
+memcpy(ciphertext, str, length + 1);
+
 enigma_encrypt(e, plaintext, length, ciphertext);
-```
-
-For now enigma is able to work only with capital letters taken from the english alphabet. That is, only with the following alphabet
-
-```c
-ABCDEFGHIJKLMNOPQRSTUVWXYZ
 ```
 
 Finally, when you stop using enigma, you have to call `destroy_enigma` for freeing up the allocated memory.
 
 ```c
-free(plaintext);
-free(ciphertext);
 destroy_enigma(enigma);
 ```

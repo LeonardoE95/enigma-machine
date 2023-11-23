@@ -12,13 +12,16 @@
 // - https://cryptii.com/pipes/enigma-machine
 
 // --------------------------------------------------------------
-// DATA STRUCTURES
+// DATA STRUCTURES, DEFINES and TYPE ALIASES
 
 #define ALPHABET_SIZE 26
 #define PLUGBOARD_SIZE 10
+#define LABEL_LENGTH 42
 #define ROTORS_N 3
 
-typedef uint8_t Wiring[ALPHABET_SIZE];
+typedef uint8_t u8;
+typedef size_t usize;
+typedef u8 Wiring[ALPHABET_SIZE];
 
 typedef enum {
   RO_FORWARD,
@@ -29,31 +32,31 @@ typedef enum {
 typedef struct {
   Wiring forward_wiring;
   Wiring backward_wiring;
-  uint8_t position;
-  uint8_t notch;
-  uint8_t ring;
-  char *name;
+  u8 position;
+  u8 notch;
+  u8 ring;
+  char name[LABEL_LENGTH];
 } Rotor;
 
 typedef struct {
-  char *name;
-  char *wiring;
-  uint8_t notch;
+  char name[LABEL_LENGTH];  
+  char wiring[ALPHABET_SIZE];  
+  u8 notch;
 } RotorModel;
 
 typedef struct {
-  uint8_t board[PLUGBOARD_SIZE][2];
-  size_t board_size;
+  u8 board[PLUGBOARD_SIZE][2];
+  usize board_size;
 } Plugboard;
 
 typedef struct {
   Wiring wiring;
-  char *name;
+  char name[LABEL_LENGTH];
 } Reflector;
 
 typedef struct {
-  char *name;
-  char *wiring;
+  char name[LABEL_LENGTH];  
+  char wiring[ALPHABET_SIZE];
 } ReflectorModel;
 
 // To properly configure an Enigma machine you need four different settings:
@@ -70,33 +73,40 @@ typedef struct {
   Reflector reflector;
 } Enigma;
 
-// Macros
-#define CHAR2CODE(ch) ((uint8_t) ((ch) - 'A'))
+// --------------------------------------------------------------
+// SIGNATURES, MACROS
+
+// TODO: expand this function so we can support a bigger alphabet and
+// not just english uppercase.
+#define CHAR2CODE(ch) ((u8) ((ch) - 'A'))
 #define CODE2CHAR(code) ((char) ('A' + (code)))
 
 // Function signatures
-Enigma *init_enigma(const char *rotor_names[ROTORS_N], const uint8_t rotor_positions[ROTORS_N], const uint8_t rotor_ring_settings[ROTORS_N],
-                    const char *reflector_name, uint8_t (*plugboard)[2],
-                    size_t plugboard_size);
+Enigma *init_enigma(const char *rotor_names[ROTORS_N],
+		    const u8 rotor_positions[ROTORS_N],
+		    const u8 rotor_ring_settings[ROTORS_N],
+                    const char *reflector_name,
+		    u8 (*plugboard)[2],
+                    usize plugboard_size);
 
-void init_wiring(Wiring wiring, const char *alphabet, size_t alphabet_len);
-void reverse_wiring(Wiring new_wiring, Wiring old_wiring, size_t wiring_len);
-char *copy_str(const char *src, const size_t length);
+void init_wiring(Wiring wiring, const char *alphabet, usize alphabet_len);
+void reverse_wiring(Wiring new_wiring, Wiring old_wiring, usize wiring_len);
+char *copy_str(const char *src, const usize length);
 
-void init_rotor(Rotor *r, const char *rotor_name, const uint8_t position, const uint8_t ring_settings);
-void init_rotors(Enigma *e, const char *rotor_names[ROTORS_N], const uint8_t rotor_positions[ROTORS_N], const uint8_t rotor_ring_settings[ROTORS_N]);
+void init_rotor(Rotor *r, const char *rotor_name, const u8 position, const u8 ring_settings);
+void init_rotors(Enigma *e, const char *rotor_names[ROTORS_N], const u8 rotor_positions[ROTORS_N], const u8 rotor_ring_settings[ROTORS_N]);
 void init_reflector(Enigma *e, const char *reflector_name);
 void destroy_enigma(Enigma *e);
 
-uint8_t apply_rotor(Rotor *r, const uint8_t plaintext_code, RotorOrder order);
+u8 apply_rotor(Rotor *r, const u8 plaintext_code, RotorOrder order);
 void move_rotors(Enigma *e);
-uint8_t apply_rotors(Enigma *e, const uint8_t plaintext_code, RotorOrder order);
-uint8_t apply_plugboard(Enigma *e, const uint8_t plaintext_code);
-uint8_t apply_reflector(Enigma *e, const uint8_t plaintext_code);
-void apply_enigma(Enigma *e, const uint8_t *input, size_t input_len, uint8_t *output);
+u8 apply_rotors(Enigma *e, const u8 plaintext_code, RotorOrder order);
+u8 apply_plugboard(Enigma *e, const u8 plaintext_code);
+u8 apply_reflector(Enigma *e, const u8 plaintext_code);
+void apply_enigma(Enigma *e, const u8 *input, usize input_len, u8 *output);
 
-void enigma_encrypt(Enigma *e, const char *plaintext, size_t plaintext_len, char *ciphertext);
-void enigma_decrypt(Enigma *e, const char *ciphertext, size_t ciphertext_len, char *plaintext);
+void enigma_encrypt(Enigma *e, const char *plaintext, usize plaintext_len, char *ciphertext);
+void enigma_decrypt(Enigma *e, const char *ciphertext, usize ciphertext_len, char *plaintext);
 
 #endif // ENIGMA_H_
 
@@ -111,21 +121,24 @@ RotorModel KNOWN_ROTORS[] = {
   {"M3-III", "BDFHJLCPRTXVZNYEIWGAKMUSQO", CHAR2CODE('V')},
   {"M3-IV", "ESOVPZJAYQUIRHXLNFTGKDCMWB", CHAR2CODE('J')},
   {"M3-V", "VZBRGITYUPSDNHLXAWMJQOFECK", CHAR2CODE('Z')},
-  {NULL, NULL, 0},
+  {"", "", 0},
 };
 
 ReflectorModel KNOWN_REFLECTORS[] = {
   {"M3-A", "EJMZALYXVBWFCRQUONTSPIKHGD"},
   {"M3-B", "YRUHQSLDPXNGOKMIEBFZCWVJAT"},
   {"M3-C", "FVPJIAOYEDRZXWGCTKUQSBNMHL"},
-  {NULL, NULL}
+  {"", ""}
 };
 
-// --------------------------------------------------------------
-// INITIALIZATION LOGIC
+usize KNOWN_ROTORS_LENGTH = (sizeof(KNOWN_ROTORS)/sizeof(RotorModel));
+usize KNOWN_REFLECTORS_LENGTH = (sizeof(KNOWN_REFLECTORS)/sizeof(ReflectorModel));
 
-void init_wiring(Wiring wiring, const char *alphabet, size_t alphabet_len) {
-  for (size_t i = 0; i < alphabet_len; i++) {
+// --------------------------------------------------------------
+// UTILS
+
+void init_wiring(Wiring wiring, const char *alphabet, usize alphabet_len) {
+  for (usize i = 0; i < alphabet_len; i++) {
     wiring[i] = CHAR2CODE(alphabet[i]);
   }
 }
@@ -134,41 +147,37 @@ void init_wiring(Wiring wiring, const char *alphabet, size_t alphabet_len) {
 //
 // old_wiring[X] = Y if and only if old_wiring[Y] = X
 // 
-void reverse_wiring(Wiring new_wiring, Wiring old_wiring, size_t wiring_len) {
-  for(size_t i = 0; i < wiring_len; i++) {
-    new_wiring[old_wiring[i]] = (uint8_t)i;
+void reverse_wiring(Wiring new_wiring, Wiring old_wiring, usize wiring_len) {
+  for(usize i = 0; i < wiring_len; i++) {
+    new_wiring[old_wiring[i]] = (u8)i;
   }  
 }
 
-char *copy_str(const char *src, const size_t length) {
-  char *dst = malloc(sizeof(char) * (length+1));
-  strncpy(dst, src, length);
-  dst[length] = '\0';
-  return dst;
-}
+// --------------------------------------------------------------
+// DESTRUCTION LOGIC
 
 // https://www.cryptomuseum.com/crypto/enigma/wiring.htm
-void init_rotor(Rotor *r, const char *rotor_name, const uint8_t position, const uint8_t ring) {
-  size_t rotor_len;
-  uint8_t found = 0;
-  
-  for(size_t i = 0; KNOWN_ROTORS[i].name != NULL; i++) {
+void init_rotor(Rotor *r, const char *rotor_name, const u8 position, const u8 ring) {
+  u8 found = 0;
+
+  // Here we assume that 
+  for(usize i = 0; i < KNOWN_ROTORS_LENGTH; i++) {
     if (strcmp(KNOWN_ROTORS[i].name, rotor_name) == 0) {
       found = 1;
-      
-      char *wiring = KNOWN_ROTORS[i].wiring;
-      char *name = KNOWN_ROTORS[i].name;
-      uint8_t notch = KNOWN_ROTORS[i].notch;
 
-      init_wiring(r->forward_wiring, wiring, ALPHABET_SIZE);
+      char *known_name    = KNOWN_ROTORS[i].name;      
+      char *known_wiring  = KNOWN_ROTORS[i].wiring;
+      u8    known_notch   = KNOWN_ROTORS[i].notch;
+
+      init_wiring(r->forward_wiring, known_wiring, ALPHABET_SIZE);
       reverse_wiring(r->backward_wiring, r->forward_wiring, ALPHABET_SIZE);
 
-      r->notch = notch;      
+      r->notch = known_notch;      
       r->position = position;
       r->ring = ring;
 
-      rotor_len = strlen(name);      
-      r->name = copy_str(rotor_name, rotor_len);      
+      // copy also NULL-terminating byte
+      memcpy(r->name, known_name, strlen(known_name) + 1);
       
       break;
     }
@@ -179,31 +188,37 @@ void init_rotor(Rotor *r, const char *rotor_name, const uint8_t position, const 
   }
 }
 
-void init_rotors(Enigma *e, const char *rotor_names[ROTORS_N], const uint8_t rotor_positions[ROTORS_N], const uint8_t rotor_ring_settings[ROTORS_N]) {
-  // We specify rotors in the init array from left to right. Given
-  // however that the most frequent rotor is the right-most rotor, we
-  // save that on index-0.
-  for (size_t i = 0; i < ROTORS_N; i++) {
-    e->rotors[i].name = NULL;
-    init_rotor(&e->rotors[i], rotor_names[ROTORS_N - 1 - i], rotor_positions[ROTORS_N - 1 - i], rotor_ring_settings[ROTORS_N - 1 - i]);
+// We specify rotors in the init array from left to right. Given
+// however that the most frequent rotor is the right-most rotor, we
+// save that on index-0.
+void init_rotors(Enigma *e,
+		 const char *rotor_names[ROTORS_N],
+		 const u8 rotor_positions[ROTORS_N],
+		 const u8 rotor_ring_settings[ROTORS_N]) {
+  
+  for (usize i = 0; i < ROTORS_N; i++) {
+    init_rotor(&e->rotors[i],
+	       rotor_names[ROTORS_N - 1 - i],
+	       rotor_positions[ROTORS_N - 1 - i],
+	       rotor_ring_settings[ROTORS_N - 1 - i]);
   }
+  
 }
 
 void init_reflector(Enigma *e, const char *reflector_name) {
-  size_t ref_len;
-  uint8_t found = 0;
+  u8 found = 0;
 
-  for (size_t i = 0; KNOWN_REFLECTORS[i].name != NULL; i++) {
+  for (usize i = 0; i < KNOWN_REFLECTORS_LENGTH; i++) {
     if (strcmp(KNOWN_REFLECTORS[i].name, reflector_name) == 0) {
       found = 1;
 
-      char *name = KNOWN_REFLECTORS[i].name;
-      char *wiring = KNOWN_REFLECTORS[i].wiring;
+      char *known_name   = KNOWN_REFLECTORS[i].name;
+      char *known_wiring = KNOWN_REFLECTORS[i].wiring;
 
-      init_wiring(e->reflector.wiring, wiring, ALPHABET_SIZE);
-
-      ref_len = strlen(name);
-      e->reflector.name = copy_str(reflector_name, ref_len);
+      init_wiring(e->reflector.wiring, known_wiring, ALPHABET_SIZE);
+      
+      // copy also NULL-terminating byte
+      memcpy(e->reflector.name, known_name, strlen(known_name) + 1);
     }
   }
 
@@ -213,23 +228,23 @@ void init_reflector(Enigma *e, const char *reflector_name) {
   
 }
 
-void init_plugboard(Enigma *e, uint8_t(*board)[2], size_t plugboard_size) {
+void init_plugboard(Enigma *e, u8(*board)[2], usize plugboard_size) {
   e->plugboard.board_size = plugboard_size;
-  for(size_t i = 0; i < plugboard_size; i++) {
+  for(usize i = 0; i < plugboard_size; i++) {
     e->plugboard.board[i][0] = CHAR2CODE(board[i][0]);
     e->plugboard.board[i][1] = CHAR2CODE(board[i][1]);
   }
 }
 
-Enigma *init_enigma(const char *rotor_names[ROTORS_N], const uint8_t rotor_positions[ROTORS_N], const uint8_t rotor_ring_settings[ROTORS_N],
-                    const char *reflector_name, uint8_t (*plugboard)[2],
-                    size_t plugboard_size) {
+Enigma *init_enigma(const char *rotor_names[ROTORS_N], const u8 rotor_positions[ROTORS_N], const u8 rotor_ring_settings[ROTORS_N],
+                    const char *reflector_name, u8 (*plugboard)[2],
+                    usize plugboard_size) {
 
   if (plugboard_size > PLUGBOARD_SIZE) {
     printf("[ERROR]: init_enigma() - supplied plugboard size (%ld) greater than maxium (%d)\n", plugboard_size, PLUGBOARD_SIZE);
     exit(0);
   }
-  
+
   Enigma *e = calloc(1, sizeof(Enigma));
   
   init_rotors(e, rotor_names, rotor_positions, rotor_ring_settings);
@@ -242,34 +257,12 @@ Enigma *init_enigma(const char *rotor_names[ROTORS_N], const uint8_t rotor_posit
 // --------------------------------------------------------------
 // DESTRUCTION LOGIC
 
-void destroy_rotor(Rotor *r) {
-  if(r->name)
-    free(r->name);
-}
-
-void destroy_rotors(Rotor *rotors) {
-  for (size_t i = 0; i < ROTORS_N; i++) {
-    destroy_rotor(&rotors[i]);
-  }
-}
-
-void destroy_plugboard(Enigma *e) {
-  for(size_t i = 0; i < e->plugboard.board_size; i++) {
-    e->plugboard.board[i][0] = 255;
-    e->plugboard.board[i][1] = 255;
-  }
+void reset_plugboard(Enigma *e) {
   e->plugboard.board_size = 0;
-}
-
-void destroy_reflector(Enigma *e) {
-  if(e->reflector.name)
-    free(e->reflector.name);
 }
 
 void destroy_enigma(Enigma *e) {
   if (e) {
-    destroy_rotors(e->rotors);
-    destroy_reflector(e);
     free(e);
   }
 }
@@ -277,7 +270,7 @@ void destroy_enigma(Enigma *e) {
 // --------------------------------------------------------------
 // CORE LOGIC
 
-uint8_t apply_rotor(Rotor *r, uint8_t char_code, RotorOrder order) {
+u8 apply_rotor(Rotor *r, u8 char_code, RotorOrder order) {
   char_code = (char_code - r->ring + r->position + ALPHABET_SIZE) % ALPHABET_SIZE;
   if (order == RO_FORWARD)  {
     char_code = r->forward_wiring[char_code];
@@ -313,7 +306,7 @@ void move_rotors(Enigma *e) {
 }
 
 
-uint8_t apply_rotors(Enigma *e, uint8_t char_code, RotorOrder order) {  
+u8 apply_rotors(Enigma *e, u8 char_code, RotorOrder order) {  
   switch(order) {
 
   case RO_FORWARD: {
@@ -334,8 +327,8 @@ uint8_t apply_rotors(Enigma *e, uint8_t char_code, RotorOrder order) {
   return char_code;
 }
 
-uint8_t apply_plugboard(Enigma *e, const uint8_t plaintext_code) {
-  for (size_t i = 0; i < e->plugboard.board_size; i++) {
+u8 apply_plugboard(Enigma *e, const u8 plaintext_code) {
+  for (usize i = 0; i < e->plugboard.board_size; i++) {
     if (plaintext_code == e->plugboard.board[i][0]) {
       return e->plugboard.board[i][1];
     } else if (plaintext_code == e->plugboard.board[i][1]) {
@@ -345,19 +338,19 @@ uint8_t apply_plugboard(Enigma *e, const uint8_t plaintext_code) {
   return plaintext_code;
 }
 
-uint8_t apply_reflector(Enigma *e, const uint8_t plaintext_code) {
+u8 apply_reflector(Enigma *e, const u8 plaintext_code) {
   return e->reflector.wiring[plaintext_code];
 }
 
-void apply_enigma(Enigma *e, const uint8_t *input, size_t input_len, uint8_t *output) {
+void apply_enigma(Enigma *e, const u8 *input, usize input_len, u8 *output) {
   // Assumes output has been already allocated with a null-terminating
   // string and that len(output) == input_len.
 
-  for (size_t i = 0; i < input_len; i++) {
-    uint8_t input_char = input[i];
+  for (usize i = 0; i < input_len; i++) {
+    u8 input_char = input[i];
 
     // Transform character into char_code
-    uint8_t char_code = CHAR2CODE(input_char);
+    u8 char_code = CHAR2CODE(input_char);
 
     // Movement is executed before encryption
     move_rotors(e);
@@ -374,23 +367,23 @@ void apply_enigma(Enigma *e, const uint8_t *input, size_t input_len, uint8_t *ou
     char_code = apply_plugboard(e, char_code);
 
     // Transform char_code into character
-    uint8_t output_char = CODE2CHAR(char_code);
+    u8 output_char = CODE2CHAR(char_code);
 
     output[i] = output_char;
   }
 }
 
-void enigma_encrypt(Enigma* e, const char* plaintext, size_t plaintext_len, char* ciphertext) {
+void enigma_encrypt(Enigma* e, const char* plaintext, usize plaintext_len, char* ciphertext) {
   assert(plaintext_len == strlen(ciphertext) && "enigma_encrypt(): strlen(ciphertext) != plaintext_len");
-  apply_enigma(e, (const uint8_t*)plaintext, plaintext_len, (uint8_t*) ciphertext);
+  apply_enigma(e, (const u8*)plaintext, plaintext_len, (u8*) ciphertext);
 #ifdef ENIGMA_DEBUG
   printf("[INFO] enigma_encrypt(): '%s' -> '%s'\n", plaintext, ciphertext);
 #endif  
 }
 
-void enigma_decrypt(Enigma *e, const char *ciphertext, size_t ciphertext_len, char *plaintext) {
+void enigma_decrypt(Enigma *e, const char *ciphertext, usize ciphertext_len, char *plaintext) {
   assert(ciphertext_len == strlen(plaintext) && "enigma_encrypt(): strlen(ciphertext) != plaintext_len");
-  apply_enigma(e, (const uint8_t*)ciphertext, ciphertext_len, (uint8_t*)plaintext);
+  apply_enigma(e, (const u8*)ciphertext, ciphertext_len, (u8*)plaintext);
 #ifdef ENIGMA_DEBUG
   printf("[INFO] enigma_decrypt(): '%s' -> '%s'\n", ciphertext, plaintext);
 #endif
