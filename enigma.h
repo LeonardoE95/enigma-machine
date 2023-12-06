@@ -121,14 +121,12 @@ RotorModel KNOWN_ROTORS[] = {
   {"M3-III", "BDFHJLCPRTXVZNYEIWGAKMUSQO", CHAR2CODE('V')},
   {"M3-IV", "ESOVPZJAYQUIRHXLNFTGKDCMWB", CHAR2CODE('J')},
   {"M3-V", "VZBRGITYUPSDNHLXAWMJQOFECK", CHAR2CODE('Z')},
-  {"", "", 0},
 };
 
 ReflectorModel KNOWN_REFLECTORS[] = {
   {"M3-A", "EJMZALYXVBWFCRQUONTSPIKHGD"},
   {"M3-B", "YRUHQSLDPXNGOKMIEBFZCWVJAT"},
   {"M3-C", "FVPJIAOYEDRZXWGCTKUQSBNMHL"},
-  {"", ""}
 };
 
 usize KNOWN_ROTORS_LENGTH = (sizeof(KNOWN_ROTORS)/sizeof(RotorModel));
@@ -236,8 +234,11 @@ void init_plugboard(Enigma *e, u8(*board)[2], usize plugboard_size) {
   }
 }
 
-Enigma *init_enigma(const char *rotor_names[ROTORS_N], const u8 rotor_positions[ROTORS_N], const u8 rotor_ring_settings[ROTORS_N],
-                    const char *reflector_name, u8 (*plugboard)[2],
+Enigma *init_enigma(const char *rotor_names[ROTORS_N],
+		    const u8 rotor_positions[ROTORS_N],
+		    const u8 rotor_ring_settings[ROTORS_N],
+                    const char *reflector_name,
+		    u8 (*plugboard)[2],
                     usize plugboard_size) {
 
   if (plugboard_size > PLUGBOARD_SIZE) {

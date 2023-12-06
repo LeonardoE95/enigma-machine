@@ -220,7 +220,6 @@ void set_plugboard(char **args, size_t n_args) {
     board[i][1] = l2[0];
   }
 
-  reset_plugboard(ENIGMA);
   init_plugboard(ENIGMA, board, board_size);
 }
 
