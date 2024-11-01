@@ -28,14 +28,18 @@ int main() {
 
   char *str = "HELLO";
   size_t length = strlen(str);
-
-  char plaintext[length];
-  char ciphertext[length];
+  char plaintext[length+1];
+  char ciphertext[length+1];
   
-  memcpy(plaintext, str, length + 1);
-  memcpy(ciphertext, str, length + 1);
+  memcpy(plaintext, str, length+1);
+  memcpy(ciphertext, str, length+1);
+  
+  plaintext[length] = '\0';
+  ciphertext[length] = '\0';
 
   enigma_encrypt(e, plaintext, length, ciphertext);
+  printf("Plaintext: %s\n", plaintext);
+  printf("Encrypted: %s\n", ciphertext);
 
   // ------------------
   
